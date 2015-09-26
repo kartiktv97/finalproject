@@ -4,12 +4,24 @@
 ;;Final project animation
 
 ;;an animation-window is a list of commands
+;;  -(make-animation-window list[cmd])
+
+;;a velocity is
+;;  -(make-velocity number number)
+(define-struct velocity (x y))
+
+;;a posn is
+;;  -(make-posn number number)
+
+;;a figure is either
+;;  -(make-circle (posn velocity string number string))
+;;  -(make-rectangle (posn velocity number number string string))
+(define circle (posn velocity radius type color))
+(define rectangle (posn velocity width height type color))
 
 ;;a command is either:
 ;;  -(make-displayfigure (figure))
+(define displayfigure (figure))
 
 
-;;a figure is either
-;;  -(make-acircle (circle))
-;;  -(make-arectangle (rectangle))
 
