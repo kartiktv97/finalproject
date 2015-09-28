@@ -11,13 +11,13 @@
 ;;  -(make-posn number number)
 
 ;;a figure is either
-;;  -(make-circle (string posn velocity string number string))
-;;  -(make-rectangle (string posn velocity number number string string))
-(define-struct circle (name posn velocity radius type color))
-(define-struct rectangle (name posn velocity width height type color))
+;;  -(make-circle string posn velocity string number string)
+;;  -(make-rectangle string posn velocity number number string string)
+(define-struct circle (name cposn cvelocity radius type color))
+(define-struct rectangle (name rposn rvelocity width height type color))
 
 ;;a stop-if is:
-;;  -(make-stop-if (hit))
+;;  -(make-stop-if hit)
 ;; where hit is a list of strings containing these: 
 ;;  -"right-edge"
 ;;  -"left-edge"
@@ -27,16 +27,23 @@
 ;;  -name of figure (string)
 (define-struct stop-if (hit))
 
+;;a window is:
+;;  -(make-window number number)
+(define-struct window (height width))
+
 ;;a command is either:
-;;  -(make-displayworld (world))
-;;  -(make-displayfigure (figure))
-;;  -stop-if
+;;  -(make-displaywindow window)
+;;  -(make-displayfigure figure)
+;;  -(make-stop-if string)
 (define-struct displayfigure (figure))
-(define-struct displayworld (world))
+(define-struct displaywindow (window))
 
 ;;an animation is a list of commands
 ;;  -(make-animation list[cmd])
 (define-struct animation (cmds))
+
+
+
 
 
 
