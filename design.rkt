@@ -166,7 +166,7 @@
 (define (run-cmd cmd)
   (cond
     [(init-canvas? cmd)(draw-canvas (init-canvas-canvas cmd))]
-    [(addgraphics? cmd)(add-figure (addgraphics-figure cmd))]
+    [(addgraphics? cmd)(draw-canvas (add-figure (addgraphics-figure cmd)))]
     [(jumprandom? cmd)(draw-canvas (jump-random  (jumprandom-name cmd) (canvas-list-of-figures current-canvas)))]
     [(jumpto? cmd)(draw-canvas (jump-to (jumpto-name cmd) (jumpto-posn cmd) (canvas-list-of-figures current-canvas)))]
     [(deletefigure? cmd)(draw-canvas (delete-figure (deletefigure-name cmd) (canvas-list-of-figures current-canvas)))]))
@@ -208,22 +208,13 @@
     [(gcircle? afigure)(parameter (gcircle-cposn afigure))]
     [(grectangle? afigure) (parameter (grectangle-rposn afigure))]))
 
-;;add-figure: figure -> void
+;;add-figure: figure -> canvas
 ;;updates the frame with the new scene
 (define (add-figure afigure)
   (begin
-    (set! current-canvas (make-canvas (cons afigure (canvas-list-of-figures current-canvas))))
-    (set! current-canvas-scene (draw-new-graphic afigure))
-    (update-frame (draw-new-graphic afigure))))
+    (make-canvas (cons afigure (canvas-list-of-figures current-canvas)))
+    ))
                
-;;draw-new-graphic: figure -> scene
-;;adds a new graphic to the scene
-(define (draw-new-graphic afigure)
-  (place-image (draw-figure-image afigure)
-               (draw-figure-posn afigure posn-x)
-               (draw-figure-posn afigure posn-y)
-               current-canvas-scene))
-
 ;;jump-random: string -> canvas
 ;;gives the figure with the given name a random position and returns the new canvas
 (define (jump-random figurename alof)
@@ -303,33 +294,6 @@
         (make-canvas (rest alof))]
        [else (make-canvas (cons (first alof)
                                 (canvas-list-of-figures (delete-figre figurename (rest alof)))))])]))
-               
-
-
-                            
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 (big-bang WIDTH HEIGHT rate init-world)                                              
                   
