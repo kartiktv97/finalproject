@@ -164,12 +164,19 @@
 ;;run-cmd: cmd -> void
 ;;executes the command that is passed as an argument
 (define (run-cmd cmd)
-  (cond
+  (begin (cond
     [(init-canvas? cmd)(draw-canvas (init-canvas-canvas cmd))]
     [(addgraphics? cmd)(draw-canvas (add-figure (addgraphics-figure cmd)))]
     [(jumprandom? cmd)(draw-canvas (jump-random  (jumprandom-name cmd) (canvas-list-of-figures current-canvas)))]
     [(jumpto? cmd)(draw-canvas (jump-to (jumpto-name cmd) (jumpto-posn cmd) (canvas-list-of-figures current-canvas)))]
-    [(deletefigure? cmd)(draw-canvas (delete-figure (deletefigure-name cmd) (canvas-list-of-figures current-canvas)))]))
+    [(deletefigure? cmd)(draw-canvas (delete-figure (deletefigure-name cmd) (canvas-list-of-figures current-canvas)))])
+         (loopcanvas current-canvas)))
+
+;;loopcanvas draws an update canvas every 0.25 seconds
+(define (loopcanvas acanvas)
+  (begin (sleep/yield 0.25) 
+         (draw-canvas (update-canvas current-canvas))
+         (loopcanvas current-canvas)))
 
 ;;draw-canvas: canvas -> scene
 ;;updates the frame after initializing it with the figures
@@ -294,6 +301,39 @@
         (make-canvas (rest alof))]
        [else (make-canvas (cons (first alof)
                                 (canvas-list-of-figures (delete-figre figurename (rest alof)))))])]))
+
+;;update-canvas: canvas -> canvas
+;;updates canvas by changing the position of the figures by given velocity
+(define (update-canvas acanvas)
+  (make-canvas (change-positions (canvas-list-of-figures acanvas))))
+
+;;change-positions: list of figures -> list-of-figures
+(define (change-positions alof)
+  (cond
+    [(empty? alof) empty]
+    [(gcircle? (first alof))(cons (change-position-circle (first alof)) (change-positions (rest alof)))]
+    [(grectangle? (first alof))(cons (change-position-rectangle (first alof)) (change-positions (rest alof)))]))
+
+;;change-position-circle: circle -> circle
+(define (change-position-circle acircle)
+  (make-gcircle (gcircle-name acircle)
+                (make-posn (+ (velocity-x (gcircle-cvelocity acircle)) (posn-x (gcircle-cposn acircle)))
+                           (+ (velocity-y (gcircle-cvelocity acircle)) (posn-y (gcircle-cposn acircle))))
+                (gcircle-cvelocity acircle)
+                (gcircle-radius acircle)
+                (gcircle-type acircle)
+                (gcircle-color acircle)))
+
+;;change-position-rectangle: rectangle -> rectangle
+(define (change-position-rectangle arectangle)
+  (make-grectangle (grectangle-name arectangle)
+                   (make-posn (+ (velocity-x (grectangle-rvelocity arectangle)) (posn-x (grectangle-rposn arectangle)))
+                              (+ (velocity-y (grectangle-rvelocity arectangle)) (posn-y (grectangle-rposn arectangle))))
+                   (grectangle-rvelocity arectangle)
+                   (grectangle-width arectangle)
+                   (grectangle-height arectangle)
+                   (grectangle-type arectangle)
+                   (grectangle-color arectangle)))
 
 (big-bang WIDTH HEIGHT rate init-world)                                              
                   
