@@ -385,8 +385,8 @@
 
 ;;compare-posn-rectangles: posn posn -> boolean
 
-;;compare-posn-mixed: posn posn number number-> boolean
-
+;;compare-posn-mixed: posn posn -> boolean
+    
   
 
 (big-bang WIDTH HEIGHT rate init-world)                                              
