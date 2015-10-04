@@ -42,59 +42,6 @@
 ;;  -(make-animation list[cmd])
 (define-struct animation (cmds))
 
-;;----------------------------------------------------------------
-;;                         EXAMPLE ANIMATIONS
-;;----------------------------------------------------------------
-;;Animation 1
-(define animation1
-  (let ([red-circle
-         (make-gcircle "redcircle"
-                      (make-posn 50 100)
-                      (make-velocity 2 2)
-                      10
-                      "solid"
-                      "red" 
-                      true)]
-        [blue-rectangle
-         (make-grectangle "bluerectangle"
-                         (make-posn 300 250)
-                         (make-velocity 0 0)
-                         50
-                         200
-                         "solid"
-                         "blue" 
-                         true)])
-    (make-animation
-     (list (make-init-canvas (make-canvas (list red-circle
-                                                blue-rectangle)))
-           (make-collide-cond (lambda (posn1 posn2) (and (= (posn-x posn1) (posn-x posn2))
-                                                         (= (posn-y posn2) (posn-y posn2))))
-                              (list (make-deletefigure "bluerectangle")
-                                    (make-change-velocity "redcircle" (make-velocity -2 -2)))
-                              empty)
-                                                                  
-      ))))
-
-;;Animation 2
-(define animation2
-  (let ([purple-circle
-         (make-gcircle "purplecircle"
-                      (make-posn 100 150)
-                      (make-velocity 0 0)
-                      20
-                      "solid"
-                      "purple"
-                      true)])
-    (make-animation
-     (list (make-init-canvas (make-canvas (list purple-circle)))
-           (make-jumprandom "purplecircle")
-           ))))
-
-
-                                    
-
-
-
 ;;------------------------------------------------------------------
 ;;                             INTERPRETER
 ;;------------------------------------------------------------------
@@ -102,8 +49,6 @@
 (define HEIGHT 500)
 (define init-world true)
 (define rate 1/28)
-
-
 (define current-canvas empty)
 
 ;;run-animation: animation -> void
@@ -127,46 +72,19 @@
               [(not((until-something-happens cmd) (until-name1 cmd) (until-name2 cmd) current-canvas))
                (cond
                  [(empty? (until-not-happened cmd))(run-cmd cmd)]
-                 [(run-cmdlist (until-happened cmd))])]
+                 [(begin (run-cmd cmd)(run-cmdlist (until-not-happened cmd)))])]
               [else (run-cmdlist (until-happened cmd))]))]
-    [(change-velocity? cmd)(draw-canvas (changevelocity (change-velocity-name cmd) (change-velocity-newvelocity cmd) (canvas-list-of-figures current-canvas)))]
+    
+    [(change-velocity? cmd)(draw-canvas
+                             (changevelocity (change-velocity-name cmd) 
+                                             (change-velocity-newvelocity cmd) 
+                                             (canvas-list-of-figures current-canvas)))]
+    
     [(init-canvas? cmd)(draw-canvas (init-canvas-canvas cmd))]
     [(addgraphics? cmd)(draw-canvas (add-figure (addgraphics-figure cmd)))]
     [(jumprandom? cmd)(draw-canvas (jump-random  (jumprandom-name cmd) (canvas-list-of-figures current-canvas)))]
     [(jumpto? cmd)(draw-canvas (jump-to (jumpto-name cmd) (jumpto-posn cmd) (canvas-list-of-figures current-canvas)))]
-    [(deletefigure? cmd)(draw-canvas (delete-figure (deletefigure-name cmd) (canvas-list-of-figures current-canvas)))])
-         ))
-;;changevelocity: string velocity canvas -> canvas
-(define (changevelocity figurename avelocity alof)
-  (cond
-    [(empty? alof) empty]
-    [(gcircle? (first alof))
-     (cond
-       [(string=? (gcircle-name (first alof)) figurename)
-        (make-canvas (cons (make-gcircle (gcircle-name(first alof))
-                                                      (gcircle-cposn(first alof))
-                                                      avelocity
-                                                      (gcircle-radius(first alof))
-                                                      (gcircle-type(first alof))
-                                                      (gcircle-color(first alof))
-                                                      (gcircle-jumprandom?(first alof)))
-                           (rest alof)))]
-       [else (make-canvas (append (list (first alof))
-                                  (rest alof)))])]
-    [(grectangle? (first alof))
-     (cond
-       [(string=? (grectangle-name(first alof)) figurename)
-        (make-canvas (cons (make-grectangle (grectangle-name(first alof))
-                                                         (grectangle-rposn (first alof))
-                                                         avelocity
-                                                         (grectangle-width(first alof))
-                                                         (grectangle-height(first alof))
-                                                         (grectangle-type(first alof))
-                                                         (grectangle-color(first alof))
-                                                         (grectangle-jumprandom?(first alof)))
-                                        (rest alof)))]
-       [else (make-canvas (append (list (first alof))
-                                  (rest alof)))])]))
+    [(deletefigure? cmd)(draw-canvas (delete-figure (deletefigure-name cmd) (canvas-list-of-figures current-canvas)))])))
 
 ;;loopcanvas draws an update canvas every 0.25 seconds
 (define (loopcanvas acanvas)
@@ -226,12 +144,12 @@
      (cond
        [(string=? (gcircle-name (first alof)) figurename)
         (make-canvas (cons (make-gcircle (gcircle-name(first alof))
-                                                      (make-posn (random 500) (random 500))
+                                                      (gcircle-cposn (first alof))
                                                       (gcircle-cvelocity(first alof))
                                                       (gcircle-radius(first alof))
                                                       (gcircle-type(first alof))
                                                       (gcircle-color(first alof))
-                                                      (gcircle-jumprandom?(first alof)))
+                                                      true)
                            (rest alof)))]
        [else (make-canvas (append (list (first alof))
                                   (canvas-list-of-figures (jump-random figurename (rest alof)))))])]
@@ -245,7 +163,7 @@
                                                          (grectangle-height(first alof))
                                                          (grectangle-type(first alof))
                                                          (grectangle-color(first alof)))
-                                        (rest alof)))]
+                                        true))]
        [else (make-canvas (cons (first alof)
                                 (canvas-list-of-figures (jump-random figurename (rest alof)))))])]))
 
@@ -316,8 +234,10 @@
 ;;change-position-circle: circle -> circle
 (define (change-position-circle acircle)
   (make-gcircle (gcircle-name acircle)
-                (make-posn (+ (velocity-x (gcircle-cvelocity acircle)) (posn-x (gcircle-cposn acircle)))
-                           (+ (velocity-y (gcircle-cvelocity acircle)) (posn-y (gcircle-cposn acircle))))
+                (cond [(gcircle-jumprandom? acircle) (make-posn (random 500) (random 500))]
+                      [else
+                  (make-posn (+ (velocity-x (gcircle-cvelocity acircle)) (posn-x (gcircle-cposn acircle)))
+                           (+ (velocity-y (gcircle-cvelocity acircle)) (posn-y (gcircle-cposn acircle))))])
                 (gcircle-cvelocity acircle)
                 (gcircle-radius acircle)
                 (gcircle-type acircle)
@@ -339,11 +259,13 @@
 
 ;;collide? : string string -> boolean
 (define (collide? figurename1 figurename2 acanvas)
-  (let ([figure1 (first (filter (lambda (afigure)
+  
+  (let 
+      ([figure1 (first (filter (lambda (afigure)
                                   (check-name afigure figurename1)) (canvas-list-of-figures acanvas)))]
         [figure2 (first (filter (lambda (afigure)
                                   (check-name afigure figurename2)) (canvas-list-of-figures acanvas)))])
-    (check-posn figure1 figure2)))
+      (check-posn figure1 figure2)))
 
 ;;check-name figure string -> boolean
 (define (check-name afigure figurename)
@@ -386,22 +308,162 @@
 
 ;;compare-posn-mixed: posn posn number number-> boolean
 (define (compare-posn-mixed posnc posnr width height)
-   (or  (and (< (abs(- (posn-y posnc) (+ (posn-y posnr) (/ height 2)))) 5)
+   (or  (and (< (abs (- (posn-y posnc) (+ (posn-y posnr) (/ height 2)))) 5)
              (and (<= (posn-x posnc) (+ (posn-x posnr) (/ width 2))) 
                   (>= (posn-x posnc) (- (posn-x posnr) (/ width 2)))))
-        (and (< (abs(- (posn-y posnc) (- (posn-y posnr) (/ height 2)))) 5)
+        (and (< (abs (- (posn-y posnc) (- (posn-y posnr) (/ height 2)))) 5)
              (and (<= (posn-x posnc) (+ (posn-x posnr) (/ width 2))) 
                   (>= (posn-x posnc) (- (posn-x posnr) (/ width 2)))))
-        (and (< (abs(- (posn-x posnc) (- (posn-x posnr) (/ width 2)))) 5)
+        (and (< (abs (- (posn-x posnc) (- (posn-x posnr) (/ width 2)))) 5)
              (and (<= (posn-y posnc) (+ (posn-y posnr) (/ height 2))) 
                   (>= (posn-y posnc) (- (posn-y posnr) (/ height 2)))))
-        (and (< (abs(- (posn-x posnc) (+ (posn-x posnr) (/ width 2)))) 5)
+        (and (< (abs (- (posn-x posnc) (+ (posn-x posnr) (/ width 2)))) 5)
              (and (<= (posn-y posnc) (+ (posn-y posnr) (/ height 2))) 
                   (>= (posn-y posnc) (- (posn-y posnr) (/ height 2)))))))
      
-  
+;;collide-with-edge?: string string -> boolean  
+(define (collide-with-edge? figurename edgename acanvas)
+    (let ([figure1 (first (filter (lambda (afigure)
+                                  (check-name afigure figurename)) (canvas-list-of-figures acanvas)))])
+      (edge-collide figure1 edgename)))
+
+;;edge-collide: figure string -> boolean
+(define (edge-collide afigure edgename)
+  (cond 
+    [(gcircle? afigure)(edge-collide-circle afigure edgename)]
+    [(grectangle? afigure)(edge-collide-rectangle afigure edgename)]))
+
+(define (edge-collide-circle afigure edgename)
+  (cond 
+    [(string=? "left-edge" edgename)(< (abs (- (posn-x (gcircle-cposn afigure)) 0)) 10)]
+    [(string=? "right-edge" edgename)(< (abs (- (posn-x (gcircle-cposn afigure)) 500)) 10)]
+    [(string=? "top-edge" edgename)(< (abs (- (posn-y (gcircle-cposn afigure)) 0)) 10)]
+    [(string=? "bottom-edge" edgename)(< (abs (- (posn-y (gcircle-cposn afigure)) 500)) 10)]))
+
+(define (edge-collide-rectangle afigure edgename)
+  (cond 
+    [(string=? "left-edge" edgename)(< (abs (- (posn-x (grectangle-rposn afigure)) 0)) 10)]
+    [(string=? "right-edge" edgename)(< (abs (- (posn-x (grectangle-rposn afigure)) 500)) 10)]
+    [(string=? "top-edge" edgename)(< (abs (- (posn-y (grectangle-rposn afigure)) 0)) 10)]
+    [(string=? "bottom-edge" edgename)(< (abs (- (posn-y (grectangle-cposn afigure)) 500)) 10)]))
+
+;;changevelocity: string velocity listoffigures -> canvas
+(define (changevelocity figurename avelocity alof)
+  (cond 
+    [(empty? alof) empty]
+    [(gcircle? (first alof))
+     (cond
+       [(string=? (gcircle-name (first alof)) figurename)
+        (make-canvas (cons (make-gcircle (gcircle-name(first alof))
+                                         (gcircle-cposn (first alof))
+                                         avelocity
+                                         (gcircle-radius(first alof))
+                                         (gcircle-type(first alof))
+                                         (gcircle-color(first alof))
+                                         (gcircle-jumprandom?(first alof)))
+                           (rest alof)))]
+       [else (make-canvas (append (list (first alof))
+                                  (canvas-list-of-figures (changevelocity figurename avelocity (rest alof)))))])]
+       
+    [(grectangle? (first alof))
+     (cond
+       [(string=? (grectangle-name(first alof)) figurename)
+        (make-canvas (cons (make-grectangle (grectangle-name(first alof))
+                                                         (grectangle-rposn (first alof))
+                                                         avelocity
+                                                         (grectangle-width(first alof))
+                                                         (grectangle-height(first alof))
+                                                         (grectangle-type(first alof))
+                                                         (grectangle-color(first alof))
+                                                         (grectangle-jumprandom?(first alof)))
+                                        (rest alof)))]
+       [else (make-canvas (append (list (first alof))
+                                  (canvas-list-of-figures (changevelocity figurename avelocity (rest alof)))))])]))
 
 (big-bang WIDTH HEIGHT rate init-world)   
+
+;;Animation 1
+(define animation1
+  (let ([red-circle
+         (make-gcircle "redcircle"
+                      (make-posn 50 100)
+                      (make-velocity 5 5)
+                      10
+                      "solid"
+                      "red" 
+                      false)]
+        [blue-rectangle
+         (make-grectangle "bluerectangle"
+                         (make-posn 300 250)
+                         (make-velocity 0 0)
+                         50
+                         200
+                         "solid"
+                         "blue" 
+                         false)])
+    (make-animation
+     (list (make-init-canvas (make-canvas (list red-circle
+                                                blue-rectangle)))
+           (make-until collide? "redcircle" "bluerectangle" empty (list 
+                                                                   (make-deletefigure "bluerectangle")
+                                                                   (make-change-velocity "redcircle" (make-velocity -5 2))
+                                                                   (make-until collide-with-edge? "redcircle" "left-edge" empty empty)
+                                                                   )))
+      )))
+
+;;Animation 2
+(define animation2
+  (let ([purple-circle
+         (make-gcircle "purplecircle"
+                      (make-posn 100 150)
+                      (make-velocity 0 0)
+                      20
+                      "solid"
+                      "purple"
+                      true)])
+    (make-animation
+     (list (make-init-canvas (make-canvas (list purple-circle)))
+           (make-until collide-with-edge? "purplecircle" "top-edge" (list (make-jumprandom "purplecircle")) empty))
+           )))
+           
+;;Animation 3
+(define animation3
+  (let ([orange-circle
+         (make-gcircle "orangecircle"
+                      (make-posn 125 100)
+                      (make-velocity 0 5)
+                      10
+                      "solid"
+                      "orange"
+                      false)]
+        [green-rectangle
+         (make-grectangle "greenrectangle"
+                         (make-posn 250 400)
+                         (make-velocity 0 0)
+                         300
+                         25
+                         "solid"
+                         "green"
+                         false)]
+        [red-rectangle
+         (make-grectangle "redrectangle"
+                         (make-posn 400 400)
+                         (make-velocity 0 0)
+                         50
+                         100
+                         "solid"
+                         "red"
+                         false)])
+    (make-animation
+     (list (make-init-canvas (make-canvas (list orange-circle
+                                                green-rectangle)))
+           (make-until collide? "orangecircle" 
+                                 "greenrectangle" 
+                                 empty
+                                 (list (make-addgraphics red-rectangle)
+                                       (make-change-velocity "orangecircle" (make-velocity 5 0))
+                                       (make-until collide? "orangecircle" "redrectangle" empty (list (make-jumprandom "orangecircle")
+                                                                                                      (make-deletefigure "redrectangle")))))))))                 
 
 ;;Animation 4
 (define animation4
@@ -430,47 +492,7 @@
                                                              10 
                                                              "solid" 
                                                              "yellow" 
-                                                             false))))))))
-
-;;Animation 3
-(define animation3
-  (let ([orange-circle
-         (make-gcircle "orangecircle"
-                      (make-posn 125 100)
-                      (make-velocity 0 5)
-                      10
-                      "solid"
-                      "orange"
-                      false)]
-        [green-rectangle
-         (make-grectangle "greenrectangle"
-                         (make-posn 250 400)
-                         (make-velocity 0 0)
-                         300
-                         25
-                         "solid"
-                         "green"
-                         false)]
-        [red-rectangle
-         (make-grectangle "redrectangle"
-                         (make-posn 400 300)
-                         (make-velocity 0 0)
-                         50
-                         100
-                         "solid"
-                         "red"
-                         false)])
-    (make-animation
-     (list (make-init-canvas (make-canvas (list orange-circle
-                                                green-rectangle)))
-           (make-until collide? "orangecircle" 
-                                 "greenrectangle" 
-                                 empty
-                                 (list (make-addgraphics red-rectangle)
-                                       (make-change-velocity "orangecircle" (make-velocity 5 0))
-                                       (make-until collide? "orangecircle" "redrectangle" empty (list (make-jumprandom "orangecircle")
-                                                                                                      (make-deletefigure "redrectangle")))))))))
-                                       
-           
-                  
-
+                                                             false))
+                             (make-jumprandom "yellowcircle")
+                             (make-until collide? "blackcircle" "yellowcircle" empty
+                                         empty)))))))
