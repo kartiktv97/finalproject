@@ -1,3 +1,5 @@
+;;Kartik Thooppal Vasu
+
 #|
 PROJECT REPORT
 1. An animation in the proposed language is defined similarly to object definitions in C. The definition for an animation is done
@@ -7,7 +9,7 @@ as follows:
                                     (command2)...)})
 Where the keywords are:
    a. animation
-   b. vars :
+   b. vars : (please note that var requires a space before and after the ":"
    c. animate
 
 The different commands that a programmer has access to are:
@@ -62,8 +64,25 @@ The different commands that a programmer has access to are:
 2. All the required functionalities as mentioned on the project webpage are working in the current submitted version of the project.
 Added functionality includes the "jumpto" function that allows the programmer to specify a new location for a given figure to  jump to.
 
-3. 
+3. The following are the changes that were made in the design after the project design submission:
+   a. Changed the name of the circle and rectangle structures from "circle" and "rectangle" 
+   "gcircle" and "grectangle" respectively.
+
+   b. Changed the identifiers for each figure from type "string" to type "symbol"
+
+   c. Removed the commands "stop-when" and "collide-cond" and replaced with "until". I realised that I was trying to stick
+     to the example slideshow program that was done in class a little too much by trying to add a collide-cond function. Also,
+     the "until" command is more intuitive and understandable to the novice programmer.
+
+4. I could've made the position checking for the collision simpler by just including a single function that compares the centers.
+   However, collision with a rectangle, has a slightly more complicated set of checks that need to be done. Also, the animation does
+   not look very accurate if we check for a circle and rectangle collision but it checks only if the centers of the two figures are 
+   close. The code structure could have been made a little more edit-friendly to a person who has no prior knowledge of the program 
+   requirements. 
+
+Note: Animation 5 has the repeated block of commands (two addgraphics)
 |#
+
 ;;Kartik Thooppal Vasu
 ;;Final project animation
 (require "world-cs1102.rkt")
@@ -206,6 +225,8 @@ Added functionality includes the "jumpto" function that allows the programmer to
         (make-canvas (cons (jump-random-rectangle (first alof))(rest alof)))]
        [else (make-canvas (append (list (first alof))(canvas-list-of-figures (jump-random figurename (rest alof)))))])]))
 
+;;jump-random-circle: gcircle -> gcircle
+;;makes the jumprandom 'true'
 (define (jump-random-circle acircle)
 (make-gcircle (gcircle-name acircle)
               (gcircle-cposn acircle)
@@ -215,6 +236,8 @@ Added functionality includes the "jumpto" function that allows the programmer to
               (gcircle-color acircle)
               true))
 
+;;jump-random-rectangle: grectangle -> grectangle
+;;makes the jumprandom 'true'
 (define (jump-random-rectangle arectangle)
   (make-grectangle (grectangle-name arectangle)
                    (grectangle-rposn arectangle)
@@ -238,10 +261,11 @@ Added functionality includes the "jumpto" function that allows the programmer to
                                          (gcircle-cvelocity(first alof))
                                          (gcircle-radius(first alof))
                                          (gcircle-type(first alof))
-                                         (gcircle-color(first alof)))
+                                         (gcircle-color(first alof))
+                                         (gcircle-jumprandom? (first alof)))
                            (rest alof)))]
        [else (make-canvas (append (list (first alof))
-                                  (canvas-list-of-figures (jump-to figurename (rest alof)))))])]
+                                  (canvas-list-of-figures (jump-to figurename aposn (rest alof)))))])]
     [(grectangle? (first alof))
      (cond
        [(symbol=? (grectangle-name(first alof)) figurename)
@@ -251,10 +275,11 @@ Added functionality includes the "jumpto" function that allows the programmer to
                                             (grectangle-width(first alof))
                                             (grectangle-height(first alof))
                                             (grectangle-type(first alof))
-                                            (grectangle-color(first alof)))
+                                            (grectangle-color(first alof))
+                                            (grectangle-jumprandom?(first alof)))
                                         (rest alof)))]
        [else (make-canvas (append (list (first alof))
-                                (canvas-list-of-figures (jump-to figurename (rest alof)))))])]))
+                                (canvas-list-of-figures (jump-to figurename  aposn (rest alof)))))])]))
 
 ;;delete-figure: symbol list-of-figures-> canvas
 ;;takes the name and the list of figures and returns a canvas after deleting the figure with the given name
@@ -265,7 +290,6 @@ Added functionality includes the "jumpto" function that allows the programmer to
                            [(grectangle? afigure) (not(symbol=? (grectangle-name afigure) figurename))])) 
     alof)))
  
-
 ;;update-canvas: canvas -> canvas
 ;;updates canvas by changing the position of the figures by given velocity
 (define (update-canvas acanvas)
@@ -280,6 +304,7 @@ Added functionality includes the "jumpto" function that allows the programmer to
                                [(grectangle? afigure)(change-position-rectangle afigure)])) alof))
 
 ;;change-position-circle: circle -> circle
+;;changes the position of the circle by the given velocity
 (define (change-position-circle acircle)
   (make-gcircle (gcircle-name acircle)
                 (cond [(gcircle-jumprandom? acircle) (make-posn (random 500) (random 500))]
@@ -293,6 +318,7 @@ Added functionality includes the "jumpto" function that allows the programmer to
                 (gcircle-jumprandom? acircle)))
 
 ;;change-position-rectangle: rectangle -> rectangle
+;;changes the position of the rectangle by the given velocity
 (define (change-position-rectangle arectangle)
   (make-grectangle (grectangle-name arectangle)
                    (cond [(grectangle-jumprandom? arectangle) (make-posn (random 500) (random 500))]
@@ -305,9 +331,11 @@ Added functionality includes the "jumpto" function that allows the programmer to
                    (grectangle-type arectangle)
                    (grectangle-color arectangle)
                    (grectangle-jumprandom? arectangle)))
-;;----------------------------------------------------------------------
-
+;;------------------------------------------------------------------------
+;;                             COLLIDE CHECKS
+;;-------------------------------------------------------------------------
 ;;collide? : symbol symbol -> boolean
+;;checks if the given  figurenames collide
 (define (collide? figurename1 figurename2 acanvas)
   (let 
       ([figure1 (first (filter (lambda (afigure)
@@ -317,6 +345,7 @@ Added functionality includes the "jumpto" function that allows the programmer to
     (check-posn figure1 figure2)))
 
 ;;check-name figure symbol -> boolean
+;;used to check if the name of the figure is the given figure name
 (define (check-name afigure figurename)
   (cond
     [(and (gcircle? afigure) (symbol=? (gcircle-name afigure) figurename))]
@@ -324,6 +353,7 @@ Added functionality includes the "jumpto" function that allows the programmer to
     [else false]))
 
 ;;check-posn: figure1 figure2 -> boolean
+;;checks the positions of the two given figures
 (define (check-posn afigure1 afigure2)
   (cond
     [(gcircle? afigure1)
@@ -352,14 +382,19 @@ Added functionality includes the "jumpto" function that allows the programmer to
                                  (grectangle-height afigure2))])]))
 
 ;;compare-posn-circles: posn posn -> boolean
+;;compares the positions of the two circles
 (define (compare-posn-circles posn1 posn2)
   (and
    (< (abs (- (posn-x posn1) (posn-x posn2))) 15)
    (< (abs (- (posn-y posn1) (posn-y posn2))) 15)))
 
-;;compare-posn-rectangles: posn posn -> boolean
+;;compare-posn-rectangles: posn posn number number number number-> boolean
+(define (compare-posn-rectangles posn1 posn2 width1 height1 width2 height2)
+  (or (and (< (abs (- (posn-x posn1) (posn-x posn2))) 10)
+           (< (abs (- (posn-y posn2) (posn-y posn1))) 10))))
 
 ;;compare-posn-mixed: posn posn number number-> boolean
+;;compares the positions of the circle and the rectangle
 (define (compare-posn-mixed posnc posnr width height)
    (or  (and (< (abs (- (posn-y posnc) (+ (posn-y posnr) (/ height 2)))) 10)
              (and (<= (posn-x posnc) (+ (posn-x posnr) (/ width 2))) 
@@ -375,12 +410,14 @@ Added functionality includes the "jumpto" function that allows the programmer to
                   (>= (posn-y posnc) (- (posn-y posnr) (/ height 2)))))))
      
 ;;collide-with-edge?: symbol symbol -> boolean  
+;;checks if the figure with the given name has collided with the edge
 (define (collide-with-edge? figurename edgename acanvas)
     (let ([figure1 (first (filter (lambda (afigure)
                                   (check-name afigure figurename)) (canvas-list-of-figures acanvas)))])
       (edge-collide figure1 edgename)))
 
 ;;edge-collide: figure aymbol -> boolean
+;;checks if the figure collides with the given edge
 (define (edge-collide afigure edgename)
   (cond 
     [(gcircle? afigure)(edge-collide-circle afigure edgename)]
@@ -395,6 +432,8 @@ Added functionality includes the "jumpto" function that allows the programmer to
     [(symbol=? 'top-edge edgename)(< (abs (- (posn-y (gcircle-cposn afigure)) 0)) 15)]
     [(symbol=? 'bottom-edge edgename)(< (abs (- (posn-y (gcircle-cposn afigure)) 500)) 15)]))
 
+;;edge-collide-rectangle: figure symbol -> boolean
+;;determines whether the given rectangle has collided with the given edge
 (define (edge-collide-rectangle afigure edgename)
   (cond 
     [(symbol=? 'left-edge edgename)(< (abs (- (posn-x (grectangle-rposn afigure)) 0)) 15)]
@@ -403,6 +442,7 @@ Added functionality includes the "jumpto" function that allows the programmer to
     [(symbol=? 'bottom-edge edgename)(< (abs (- (posn-y (grectangle-cposn afigure)) 500)) 15)]))
 
 ;;changevelocity: symbol velocity listoffigures -> canvas
+;;changes the figure with the given name to the velocity
 (define (changevelocity figurename avelocity alof)
   (cond 
     [(empty? alof) empty]
@@ -437,6 +477,9 @@ Added functionality includes the "jumpto" function that allows the programmer to
 
 (big-bang WIDTH HEIGHT rate init-world)   
 
+;;-------------------------------------------------------------------
+;;                             MACROS
+;;-------------------------------------------------------------------
 (define-syntax velocity
   (syntax-rules()
     [(velocity x y)
@@ -487,6 +530,11 @@ Added functionality includes the "jumpto" function that allows the programmer to
     [(jumprandom name)
      (make-jumprandom 'name)]))
 
+(define-syntax jumpto
+  (syntax-rules()
+    [(jumpto name position)
+     (make-jumpto 'name position)]))
+
 (define-syntax addgraphics
   (syntax-rules()
     [(addgraphics figure)
@@ -494,8 +542,10 @@ Added functionality includes the "jumpto" function that allows the programmer to
 
 (define-syntax until
   (syntax-rules(collideswith)
-    [(until (function name1 collideswith name2) {cmd1 ...})
-     (make-until function 'name1 'name2 (cond [(symbol? 'cmd1 ...) empty] [else (list cmd1 ...)]))]))
+    [(until (name1 collideswith name2) {cmd1 ...})
+      (cond [(or (symbol=? 'name2 'top-edge)(symbol=? 'name2 'left-edge)(symbol=? 'name2 'bottom-edge)(symbol=? 'name2 'right-edge))
+             (make-until collide-with-edge? 'name1 'name2 (cond [(symbol? '(first (list cmd1 ...))) empty] [else (list cmd1 ...)]))]
+            [else (make-until collide? 'name1 'name2 (cond [(symbol? '(first (list cmd1 ...))) empty] [else (list cmd1 ...)]))])]))            
 
 (define-syntax animation
   (syntax-rules (vars actions)
@@ -504,49 +554,60 @@ Added functionality includes the "jumpto" function that allows the programmer to
      (define aname (let ([name figure]...)
                      animate))]))
 
+(define moveanimation false)
+
 ;;Animation 1
-(define animation1
-  (let ([red-circle (circle redcircle (position 50 100) (velocity 20 20) 10 "solid" "red")]
-        [blue-rectangle (rectangle bluerectangle (position 300 250) (velocity 0 0)  50 200 "solid" "blue")])
-    (animate (initialize (canvas red-circle blue-rectangle))
-             (until (collide? redcircle collideswith bluerectangle) {moveanimation})
+(animation animation1 {vars : [red-circle (circle redcircle (position 50 100) (velocity 20 20) 10 "solid" "red")]
+        [blue-rectangle (rectangle bluerectangle (position 300 250) (velocity 0 0)  50 200 "solid" "blue")]
+        (animate (initialize (canvas red-circle blue-rectangle))
+             (until (redcircle collideswith bluerectangle) {moveanimation})
              (delete bluerectangle)
              (change-velocity-to redcircle (velocity -20 10))
-             (until (collide-with-edge? redcircle collideswith left-edge) {moveanimation}))))
+             (until (redcircle collideswith left-edge) {moveanimation}))})
+  
 
 ;;Animation 2
-(define animation2
-  (let ([purple-circle (circle purplecircle (position 100 150) (velocity 0 0) 20 "solid" "purple")])
-    (animate (initialize (canvas purple-circle)) 
-             (until (collide-with-edge? purplecircle collideswith top-edge)
-                    {(jumprandom purplecircle)}))))
+(animation animation2 {vars : [purple-circle (circle purplecircle (position 100 150) (velocity 0 0) 20 "solid" "purple")]
+                         (animate (initialize (canvas purple-circle)) 
+             (until (purplecircle collideswith top-edge)
+                    {(jumprandom purplecircle)}))})
            
 ;;Animation 3
-(define animation3
-  (let ([orange-circle (circle orangecircle (position 125 100) (velocity 0 15) 10 "solid" "orange")]
-        [green-rectangle (rectangle greenrectangle (position 250 400) (velocity 0 0) 300 25 "solid" "green")]
-        [red-rectangle (rectangle redrectangle (position 375 350) (velocity 0 0) 50 100 "solid" "red")])
-    (animate (initialize (canvas orange-circle green-rectangle))
-             (until (collide? orangecircle collideswith greenrectangle) {moveanimation})
-             (addgraphics red-rectangle)
-             (change-velocity-to orangecircle (velocity 15 0))
-             (until (collide? orangecircle collideswith redrectangle) {moveanimation})
-             (jumprandom orangecircle)
-             (delete redrectangle))))                 
+(animation animation3 {vars : [orange-circle (circle orangecircle (position 125 100) (velocity 0 15) 10 "solid" "orange")]
+                            [green-rectangle (rectangle greenrectangle (position 250 400) (velocity 0 0) 300 25 "solid" "green")]
+                            [red-rectangle (rectangle redrectangle (position 375 350) (velocity 0 0) 50 100 "solid" "red")]
+                            (animate (initialize (canvas orange-circle green-rectangle))
+                                     (until (orangecircle collideswith greenrectangle) {moveanimation})
+                                     (addgraphics red-rectangle)
+                                     (change-velocity-to orangecircle (velocity 15 0))
+                                     (until (orangecircle collideswith redrectangle) {moveanimation})
+                                     (jumprandom orangecircle)
+                                     (delete redrectangle))})
+                                     
 
 ;;Animation 4
-(define animation4
-  (let ([black-circle (circle blackcircle (position 300 100) (velocity 0 5) 10 "solid" "black")]
-        [redcircle (circle redcircle (position 300 400) (velocity 0 0) 10 "solid" "red")])
-    (animate (initialize (canvas black-circle redcircle))
-             (until (collide? blackcircle collideswith redcircle) {moveanimation})
+(animation animation4 {vars : [black-circle (circle blackcircle (position 300 100) (velocity 0 5) 10 "solid" "black")]
+                              [redcircle (circle redcircle (position 300 400) (velocity 0 0) 10 "solid" "red")]
+                              (animate (initialize (canvas black-circle redcircle))
+             (until (blackcircle collideswith redcircle) {moveanimation})
              (addgraphics (circle yellowcircle (position 200 400) (velocity 0 4) 10 "solid" "yellow"))
              (jumprandom yellowcircle)
-             (until (collide? blackcircle collideswith yellowcircle) {moveanimation}))))
+             (until (blackcircle collideswith yellowcircle) {moveanimation}))})
+
 
 ;;Animation 5
 (animation animation5 {vars : [blue-circle (circle bluecircle (position 250 250) (velocity 5 0) 10 "solid" "blue")]
                                [raindrop (circle redcircle (position 30 30) (velocity 0 55) 20 "solid" "red")]
+                               [greenrectangle (rectangle greenrectangle (position 100 100) (velocity 55 0) 10 5 "solid" "green")]
                         (animate (initialize (canvas blue-circle raindrop))
-                                 (until (collide-with-edge? bluecircle collideswith right-edge)
-                                        {(addgraphics raindrop)}))})
+                                 (until (bluecircle collideswith right-edge)
+                                        {(addgraphics raindrop)
+                                         (addgraphics greenrectangle)})
+                                 (jumpto bluecircle (position 250 250)))})
+
+
+
+                         
+                                     
+                                     
+                                                                                             
